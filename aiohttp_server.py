@@ -13,8 +13,9 @@ async def submit_handler(request):
     data = await web.Request.post(request)
     email, url = data["email"], data["url"]
     # если в tasks есть задача с таким url, возвращаем информацию по задаче
-    for task in tasks:
+    for task in tasks.values():
         if task["url"] == url:
+            print("already exists")
             return web.Response(text=str(task))
     # иначе создаем новую задачу с uuid и статусом "running"
     task_id = str(uuid4())
@@ -45,7 +46,8 @@ async def perform_task(task_id, url, email):
     tasks[task_id]["md5"] = file_md5
     tasks[task_id]["status"] = "done"
     if email:
-        send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
+        # send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
+        pass
 
 
 async def get_md5_hash(url):
