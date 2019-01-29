@@ -7,16 +7,37 @@ import smtplib
 
 async def submit_handler(request):
     """
-    берем email из POST
-    добавляем в словарь tasks uuid файла и статус running
-    возвращаем пользователю uuid
+    обработчик /submit
+    получает email и url файла из request, начинает обработку, возвращает uuid задачи
     """
     data = await web.Request.post(request)
     email, url = data["email"], data["url"]
+    # если в tasks есть задача с таким url, возвращаем информацию по задаче
+    for task in tasks:
+        if task["url"] == url:
+            return web.Response(text=str(task))
+    # иначе создаем новую задачу с uuid и статусом "running"
     task_id = str(uuid4())
     tasks[task_id] = {"md5": None, "status": "running", "url": url}
+    # запускаем расчет md5 и отправку email в фоновом режиме
     await spawn(request, perform_task(task_id, url, email))
+    # возвращаем uuid задачи
     return web.Response(text=str({"id": task_id}) + "\n")
+
+
+async def check_handler(request):
+    """
+    обработчик /check
+    получает id из request и возвращает статус задачи
+    """
+    id = request.rel_url.query["id"]
+    if id not in tasks:
+        text = "task does not exist"
+    elif tasks[id]["status"] == "done":
+        text = str(tasks[id])
+    else:
+        text = "status: {}".format(tasks[id]["status"])
+    return web.Response(text=text + "\n")
 
 
 async def perform_task(task_id, url, email):
@@ -48,21 +69,10 @@ def send_email(email, msg):
     server.quit()
 
 
-async def check_handler(request):
-    """
-    take id from GET
-    return result data from results dictionary (depends on status)
-    """
-    id = request.rel_url.query["id"]
-    if id not in tasks:
-        text = "task does not exist"
-    elif tasks[id]["status"] == "done":
-        text = str(tasks[id])
-    else:
-        text = "status: {}".format(tasks[id]["status"])
-    return web.Response(text=text + "\n")
 
 
+
+# словарь для хранения данных по задачам, {uuid: {"md5": "xxx", "status": "xxx", "url": "xxx"}}
 tasks = dict()
 app = web.Application()
 setup(app)
