@@ -15,7 +15,6 @@ async def submit_handler(request):
     # если в tasks есть задача с таким url, возвращаем информацию по задаче
     for task in tasks.values():
         if task["url"] == url:
-            print("already exists")
             return web.Response(text=str(task))
     # иначе создаем новую задачу с uuid и статусом "running"
     task_id = str(uuid4())
@@ -23,6 +22,7 @@ async def submit_handler(request):
     # запускаем расчет md5 и отправку email в фоновом режиме
     await spawn(request, perform_task(task_id, url, email))
     # возвращаем uuid задачи
+    print(task_id, tasks[task_id] )
     return web.Response(text=str({"id": task_id}) + "\n")
 
 
@@ -42,15 +42,20 @@ async def check_handler(request):
 
 
 async def perform_task(task_id, url, email):
+    """
+    вызов расчета MD5, добавление результата в tasks и отправка по e-mail
+    """
     file_md5 = await get_md5_hash(url)
     tasks[task_id]["md5"] = file_md5
     tasks[task_id]["status"] = "done"
-    if email:
-        # send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
-        pass
+    # if email:
+    #     send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
 
 
 async def get_md5_hash(url):
+    """
+    расчет MD5, расчет происходит во время скачивания файла небольшими блоками
+    """
     async with ClientSession() as session:
         async with session.get(url) as resp:
             h = md5()
@@ -63,6 +68,10 @@ async def get_md5_hash(url):
 
 
 def send_email(email, msg):
+    """
+    отправка MD5 на e-mail
+    логин и пароль отправителя, smtp-сервер и порт указываются в файле email_data.txt
+    """
     with open("email_data.txt", "r") as f:
         your_email, your_password, smtp_serv, smtp_port = f.read().split("\n")[:4]
     server = smtplib.SMTP_SSL(smtp_serv, smtp_port)
@@ -71,14 +80,11 @@ def send_email(email, msg):
     server.quit()
 
 
-
-
-
 # словарь для хранения данных по задачам, {uuid: {"md5": "xxx", "status": "xxx", "url": "xxx"}}
 tasks = dict()
+
 app = web.Application()
 setup(app)
 app.add_routes([web.get("/check", check_handler),
                 web.post("/submit", submit_handler)])
 web.run_app(app, host="127.0.0.1", port=8000)
-
