@@ -24,7 +24,7 @@ async def perform_task(task_id, url, email):
     tasks[task_id]["md5"] = file_md5
     tasks[task_id]["status"] = "done"
     if email:
-        send_email(email, "file URL: {}\nMD5-hash: {}".format(url, file_md5))
+        send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
 
 
 async def get_md5_hash(url):
@@ -40,8 +40,9 @@ async def get_md5_hash(url):
 
 
 def send_email(email, msg):
-    your_email, your_password = "xxxxx", "xxxxx"
-    server = smtplib.SMTP_SSL('smtp.mail.ru', 465)
+    with open("email_data.txt", "r") as f:
+        your_email, your_password, smtp_serv, smtp_port = f.read().split("\n")[:4]
+    server = smtplib.SMTP_SSL(smtp_serv, smtp_port)
     server.login(your_email, your_password)
     server.sendmail(your_email, email, msg)
     server.quit()
