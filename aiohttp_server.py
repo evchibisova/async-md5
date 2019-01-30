@@ -50,8 +50,8 @@ async def perform_task(task_id, url, email):
         file_md5 = await get_md5_hash(url)
         tasks[task_id]["md5"] = file_md5
         tasks[task_id]["status"] = "done"
-        # if email:
-        #     send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
+        if email:
+            send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
     except Exception:
         tasks[task_id]["status"] = "failed"
 
