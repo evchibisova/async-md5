@@ -1,0 +1,1 @@
+sender@mail.ru password smtp.mail.ru 465
