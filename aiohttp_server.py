@@ -13,10 +13,10 @@ async def submit_handler(request):
     data = await web.Request.post(request)
     email, url = data["email"], data["url"]
     # если в tasks есть задача с таким url, возвращаем информацию по задаче
-    for task in tasks.values():
-        if task["url"] == url and task["status"] != "failed":
-            send_email(email, "file URL: {}\nMD5: {}".format(url, task["md5"]))
-            return web.Response(text=str(task))
+    for task_id in tasks.keys():
+        if tasks[task_id]["url"] == url and tasks[task_id]["status"] != "failed":
+            send_email(email, "file URL: {}\nMD5: {}".format(url, tasks[task_id]["md5"]))
+            return web.Response(text=str({"id": task_id}) + "\n")
     # иначе создаем новую задачу с uuid и статусом "running"
     task_id = str(uuid4())
     tasks[task_id] = {"md5": None, "status": "running", "url": url}
