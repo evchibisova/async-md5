@@ -42,7 +42,6 @@ async def check_handler(request):
         return web.Response(status=200, text="{}\n".format(tasks[id]))
 
 
-
 async def perform_task(task_id, url, email):
     """
     вызов расчета MD5, добавление результата в tasks и отправка по e-mail
