@@ -22,7 +22,6 @@ async def submit_handler(request):
     # запускаем расчет md5 и отправку email в фоновом режиме
     await spawn(request, perform_task(task_id, url, email))
     # возвращаем uuid задачи
-    print(task_id, tasks[task_id] )
     return web.Response(text=str({"id": task_id}) + "\n")
 
 
@@ -32,35 +31,41 @@ async def check_handler(request):
     получает id из request и возвращает статус задачи
     """
     id = request.rel_url.query["id"]
+    # задачи не существует
     if id not in tasks:
-        text = "task does not exist"
-    elif tasks[id]["status"] == "done":
-        text = str(tasks[id])
+        return web.Response(status=404, text="404: not found\n")
+    # задача завершилась неудачей
+    elif tasks[id]["status"] == "failed":
+        return web.Response(status=500, text="failed\n")
+    # задача в работе или завершена, возвращает из словаря состояние "running" или "done"
     else:
-        text = "status: {}".format(tasks[id]["status"])
-    return web.Response(text=text + "\n")
+        return web.Response(status=200, text="{}\n".format(tasks[id]))
+
 
 
 async def perform_task(task_id, url, email):
     """
     вызов расчета MD5, добавление результата в tasks и отправка по e-mail
     """
-    file_md5 = await get_md5_hash(url)
-    tasks[task_id]["md5"] = file_md5
-    tasks[task_id]["status"] = "done"
-    # if email:
-    #     send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
+    try:
+        file_md5 = await get_md5_hash(url)
+        tasks[task_id]["md5"] = file_md5
+        tasks[task_id]["status"] = "done"
+        # if email:
+        #     send_email(email, "file URL: {}\nMD5: {}".format(url, file_md5))
+    except Exception:
+        tasks[task_id]["status"] = "failed"
 
 
 async def get_md5_hash(url):
     """
-    расчет MD5, расчет происходит во время скачивания файла небольшими блоками
+    потоковое скачивание файла и расчет MD5
     """
     async with ClientSession() as session:
         async with session.get(url) as resp:
             h = md5()
             while True:
-                data = await resp.content.read(1024)
+                data = await resp.content.read(2048)
                 if not data:
                     break
                 h.update(data)
