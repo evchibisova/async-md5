@@ -15,6 +15,7 @@ async def submit_handler(request):
     # если в tasks есть задача с таким url, возвращаем информацию по задаче
     for task in tasks.values():
         if task["url"] == url and task["status"] != "failed":
+            send_email(email, "file URL: {}\nMD5: {}".format(url, task["md5"]))
             return web.Response(text=str(task))
     # иначе создаем новую задачу с uuid и статусом "running"
     task_id = str(uuid4())
