@@ -37,7 +37,10 @@ async def check_handler(request):
     # задача завершилась неудачей
     elif tasks[id]["status"] == "failed":
         return web.Response(status=500, text="failed\n")
-    # задача в работе или завершена, возвращает из словаря состояние "running" или "done"
+    # задача в работе
+    elif tasks[id]["status"] == "running":
+        return web.Response(status=200, text="running\n")
+    # задача завершена
     else:
         return web.Response(status=200, text="{}\n".format(tasks[id]))
 
