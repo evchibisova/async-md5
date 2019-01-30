@@ -81,7 +81,7 @@ def send_email(email, msg):
     логин и пароль отправителя, smtp-сервер и порт указываются в файле email_data.txt
     """
     with open("email_data.txt", "r") as f:
-        your_email, your_password, smtp_serv, smtp_port = f.read().split("\n")[:4]
+        your_email, your_password, smtp_serv, smtp_port = f.read().split(" ")[:4]
     server = smtplib.SMTP_SSL(smtp_serv, smtp_port)
     server.login(your_email, your_password)
     server.sendmail(your_email, email, msg)
