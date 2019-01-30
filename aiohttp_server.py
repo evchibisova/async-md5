@@ -25,24 +25,21 @@ async def submit_handler(request):
     return web.Response(text=str({"id": task_id}) + "\n")
 
 
-async def submit_handler(request):
+async def check_handler(request):
     """
-    обработчик /submit
-    получает email и url файла из request, начинает обработку, возвращает uuid задачи
+    обработчик /check
+    получает id из request и возвращает статус задачи
     """
-    data = await web.Request.post(request)
-    email, url = data["email"], data["url"]
-    # если в tasks есть задача с таким url, возвращаем информацию по задаче
-    for task in tasks.values():
-        if task["url"] == url:
-            return web.Response(text=str(task))
-    # иначе создаем новую задачу с uuid и статусом "running"
-    task_id = str(uuid4())
-    tasks[task_id] = {"md5": None, "status": "running", "url": url}
-    # запускаем расчет md5 и отправку email в фоновом режиме
-    await spawn(request, perform_task(task_id, url, email))
-    # возвращаем uuid задачи
-    return web.Response(text=str({"id": task_id}) + "\n")
+    id = request.rel_url.query["id"]
+    # задачи не существует
+    if id not in tasks:
+        return web.Response(status=404, text="404: not found\n")
+    # задача завершилась неудачей
+    elif tasks[id]["status"] == "failed":
+        return web.Response(status=500, text="failed\n")
+    # задача в работе или завершена, возвращает из словаря состояние "running" или "done"
+    else:
+        return web.Response(status=200, text="{}\n".format(tasks[id]))
 
 
 async def perform_task(task_id, url, email):
