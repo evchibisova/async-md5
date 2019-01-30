@@ -1,7 +1,7 @@
 from aiohttp import web, ClientSession
 from uuid import uuid4
 from hashlib import md5
-import aiojobs
+from aiojobs.aiohttp import setup, spawn
 import smtplib
 
 
@@ -20,7 +20,7 @@ async def submit_handler(request):
     task_id = str(uuid4())
     tasks[task_id] = {"md5": None, "status": "running", "url": url}
     # запускаем расчет md5 и отправку email в фоновом режиме
-    await aiojobs.spawn(request, perform_task(task_id, url, email))
+    await spawn(request, perform_task(task_id, url, email))
     # возвращаем uuid задачи
     return web.Response(text=str({"id": task_id}) + "\n")
 
@@ -88,7 +88,7 @@ def send_email(email, msg):
 tasks = dict()
 
 app = web.Application()
-aiojobs.setup(app)
+setup(app)
 app.add_routes([web.get("/check", check_handler),
                 web.post("/submit", submit_handler)])
 web.run_app(app, host="127.0.0.1", port=8000)
